@@ -1,0 +1,49 @@
+- hosts: all
+  gather_facts: false
+
+  pre_tasks:
+  - name: install python 2
+    raw: test -e /usr/bin/python ||  (apt -y update && apt install -y python-minimal)
+
+  tasks:
+  - name: test connection
+    ping:
+    remote_user: root
+
+  - name: ensure apache installed
+    apt:
+      name: apache2
+      state: latest
+
+  - name: remove default websitet files
+    raw: sudo rm -rf /var/www/html/*.*
+
+  - name: copy website over
+    template:
+      src: /etc/ansible/playbooks/www/index.html
+      dest: /var/www/html/index.html
+    notify: 
+    - reload apache
+    - restart apache
+    - retrieve webpage
+    - check deploy
+  
+  handlers:
+  - name: retrieve webpage
+    uri:
+      url: http://ansible.gnuchu.com
+      return_content: yes
+    register: webpage
+
+  - name: check deploy
+    fail:
+    when: "'website' not in webpage.content"
+
+  - name: restart apache
+    service:
+      name: apache2
+      state: restarted
+  - name: reload apache
+    service: 
+      name: apache2
+      state: reloaded 
