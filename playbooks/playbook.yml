@@ -1,27 +1,51 @@
 - hosts: all
-  gather_facts: true
 
   pre_tasks:
-  - name: install python 2
+  - name: "install python 2"
     raw: test -e /usr/bin/python ||  (apt -y update && apt install -y python-minimal)
 
+  gather_facts: false
+  
   tasks:
-  - name: test connection
+  - name: Gather Facts
+    setup:
+
+  - name: "test connection"
     ping:
     remote_user: root
 
-  - name: ensure apache installed
+  - name: "ensure apache installed"
     apt:
       name: apache2
+      state: latest
+
+  - name: Install php
+    apt:
+      name: php7.0
+      state: latest
+
+  - name: Install Mod PHP
+    apt: 
+      name: libapache2-mod-php7.0
+      state: latest
+
+  - name: Install SQLite3
+    apt:
+      name: php7.0-sqlite3
       state: latest
 
   - name: remove default websitet files
     raw: sudo rm -rf /var/www/html/*.*
 
+  - name: copy over php configuration
+    copy:
+      src: /etc/ansible/playbooks/files/php.ini
+      dest: /etc/php/7.0/apache2/php.ini
+
   - name: copy website over
-    template:
-      src: /etc/ansible/playbooks/www/index.html
-      dest: /var/www/html/index.html
+    copy:
+      src: /etc/ansible/playbooks/www/
+      dest: /var/www/html/
     notify: 
     - reload apache
     - restart apache
@@ -29,6 +53,16 @@
     - check deploy
   
   handlers:
+  - name: reload apache
+    service: 
+      name: apache2
+      state: reloaded 
+  
+  - name: restart apache
+    service:
+      name: apache2
+      state: restarted
+
   - name: retrieve webpage
     uri:
       url: "http://{{ ansible_hostname }}"
@@ -37,13 +71,7 @@
 
   - name: check deploy
     fail:
-    when: "'website' not in webpage.content"
+    when: "'id' not in webpage.content"
 
-  - name: restart apache
-    service:
-      name: apache2
-      state: restarted
-  - name: reload apache
-    service: 
-      name: apache2
-      state: reloaded 
+      
+
