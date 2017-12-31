@@ -1,5 +1,5 @@
 - hosts: all
-  gather_facts: false
+  gather_facts: true
 
   pre_tasks:
   - name: install python 2
@@ -31,7 +31,7 @@
   handlers:
   - name: retrieve webpage
     uri:
-      url: http://ansible.gnuchu.com
+      url: "http://{{ ansible_hostname }}"
       return_content: yes
     register: webpage
 
