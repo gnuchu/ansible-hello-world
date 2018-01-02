@@ -3,8 +3,18 @@
 
   switch($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-      $customers = getCustomers($conn);
-      echo json_encode($customers);
+      $requestcountrowarray = getRequestCount($conn);
+      $requestcount = (int)$requestcountrowarray[0]['requestcount'];
+
+      if($requestcount < 10) {
+        incrementRequestCount($conn, $requestcount + 1);
+        header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
+      }
+      else {
+        $customers = getCustomers($conn);
+        header('Content-Type: application/json', true, 200);
+        echo json_encode($customers);
+      }
       break;
 
     case 'POST':

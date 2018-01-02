@@ -6,14 +6,26 @@
 
   function getCustomers($conn) {
     $sql = "select id, first_name, last_name, email, gender, ip_address from customers";
-    $results = $conn->query($sql);
-    $rows = array();
-    $first = 0;
+    return getRows($conn, $sql);
+  }
+  
+  function getRequestCount($conn) {
+    $sql = 'select requestcount from settings';
+    return getRows($conn, $sql);
+  }
 
-    while($row = $results->fetchArray(SQLITE3_ASSOC)) {
+  function incrementRequestCount($conn) {
+    $sql = 'update settings set requestcount = requestcount + 1 where id = 1';
+    $conn->exec($sql);
+  }
+  
+  function getRows($conn, $sql) {
+    $rows = array();
+    $query = $conn->query($sql);
+    while($row = $query->fetchArray(SQLITE3_ASSOC)) {
       array_push($rows, $row);
     }
-
     return $rows;
   }
+
 ?>

@@ -29,23 +29,50 @@
       name: libapache2-mod-php7.0
       state: latest
 
-  - name: Install SQLite3
+  - name: Install php SQLite3 bindings
     apt:
       name: php7.0-sqlite3
       state: latest
+  
+  - name: Install sqlite3 command line
+    apt: 
+      name: sqlite3
+      state: latest
 
-  - name: remove default websitet files
+  - name: remove default website files
     raw: sudo rm -rf /var/www/html/*.*
 
   - name: copy over php configuration
     copy:
-      src: /etc/ansible/playbooks/files/php.ini
+      src: files/php.ini
       dest: /etc/php/7.0/apache2/php.ini
 
   - name: copy website over
     copy:
-      src: /etc/ansible/playbooks/www/
+      src: www/
       dest: /var/www/html/
+  
+  - name: delete database
+    file: 
+      path: /var/www/html/customers.sqlite3
+      state: absent
+
+  - name: copy over database creation script 
+    copy: 
+      src: files/customers.sql
+      dest: /tmp/customers.sql 
+    
+  - name: create database
+    raw: sudo sqlite3 /var/www/html/customers.sqlite3 < /tmp/customers.sql
+
+  - name: set file permissions
+    file: 
+      path: /var/www/html
+      owner: www-data
+      recurse: yes
+  
+  - name: remove tmp script
+    raw: sudo rm -rf /tmp/customers.sql
     notify: 
     - reload apache
     - restart apache
@@ -68,10 +95,12 @@
       url: "http://{{ ansible_hostname }}"
       return_content: yes
     register: webpage
+    until: webpage.status == 200
+    retries: 20
 
   - name: check deploy
     fail:
-    when: "'id' not in webpage.content"
+    when: webpage.content_type != "application/json"
 
       
 
